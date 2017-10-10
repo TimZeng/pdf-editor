@@ -1,6 +1,9 @@
 /node_modules
 bundle.js
 npm-debug.log
+.DS_Store
+1.bundle.js
+ff9c5f5b559587ba9c22.worker.js
 
 # IntelliJ
 *.iml
