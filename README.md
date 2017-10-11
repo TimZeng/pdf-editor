@@ -14,8 +14,7 @@ Checkout this repo, install dependencies, then start the gulp process with the f
 	> git clone https://github.com/TimZeng/pdf-editor.git
 	> cd pdf-editor
 	> npm install
-	> npm build
-  > node server.js
+	> npm start
 ```
 
 ### Not Familiar with Git?
@@ -23,8 +22,7 @@ Click [here](https://github.com/TimZeng/pdf-editor.git) then download the .zip f
 
 ```
 	> npm install
-	> npm build
-  > node server.js
+	> npm start
 ```
 
 ## Built With
