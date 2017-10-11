@@ -32,3 +32,11 @@ Click [here](https://github.com/TimZeng/pdf-editor.git) then download the .zip f
 * [react-pdf](https://www.npmjs.com/package/react-pdf) - Display PDF files in React applications
 * [HummusJS](https://github.com/galkahana/HummusJS) - NodeJS Module for Creating, Parsing an Manipulating PDF Files and Streams
 * [Webpack](https://webpack.js.org/) - The module bundler for modern JavaScript applications
+
+## Issues
+
+* Uploading PDF to server [See more](https://github.com/TimZeng/pdf-editor/issues)
+
+## Author
+
+* **Tim Zeng** - *Initial work* - [See More](https://github.com/TimZeng)
