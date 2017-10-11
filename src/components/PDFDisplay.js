@@ -11,8 +11,11 @@ class PDFDisplay extends Component {
     y: 0,
     documentReady: false,
     documentHeight: 0,
+    documentWidth: 0,
     params: {
-
+      pageSize: 1,
+      activeIndex: 0,
+      highlights: []
     }
   }
 
@@ -21,7 +24,11 @@ class PDFDisplay extends Component {
       file: event.target.files[0],
       documentHeight: 0,
       documentReady: false,
-      params: {}
+      params: {
+        pageSize: 1,
+        activeIndex: 0,
+        highlights: []
+      }
     });
   }
 
@@ -39,26 +46,13 @@ class PDFDisplay extends Component {
       pageNumber: prevState.pageNumber + by,
     }))
 
-  _onMouseMove(e) {
-    let { documentReady, documentHeight } = this.state;
-    if ( documentReady && !documentHeight ) {
-      const content = document.querySelector('.ReactPDF__Page__textContent');
-      documentHeight = Number(content.style.height.replace(/\D/g,''));
-    }
-    const position = this.refs.elem.getDOMNode().getBoundingClientRect();
-    this.setState({
-      x: e.nativeEvent.offsetX,
-      y: documentHeight - e.nativeEvent.offsetY,
-      documentHeight
-    });
-  }
-
   recordPosition(e) {
-    let { documentReady, documentHeight, params } = this.state;
+    let { documentReady, documentHeight, documentWidth, params } = this.state;
 
     if ( documentReady && !documentHeight ) {
       const content = document.querySelector('.ReactPDF__Page__textContent');
-      documentHeight = Number(content.style.height.replace(/\D/g,''));
+      documentHeight = Number(content.style.height.replace('px',''));
+      documentWidth = Number(content.style.width.replace('px',''));
     }
 
     const position = this.refs.elem.getDOMNode().getBoundingClientRect();
@@ -66,29 +60,98 @@ class PDFDisplay extends Component {
     const y = documentHeight - e.nativeEvent.offsetY;
 
     if (documentReady) {
-      if ( !!params.x && !!params.y ) {
-        params.width = Number(x) - params.x;
-        params.height = Number(y) - params.y;
+      params.highlights[params.activeIndex] = params.highlights[params.activeIndex] || {};
+      if ( !!params.highlights[params.activeIndex].x && !!params.highlights[params.activeIndex].y ) {
+        params.highlights[params.activeIndex].width = Number(x) - params.highlights[params.activeIndex].x;
+        params.highlights[params.activeIndex].height = Number(y) - params.highlights[params.activeIndex].y;
       } else {
-        params.x = Number(x);
-        params.y = Number(y);
+        params.highlights[params.activeIndex].x = Number(x);
+        params.highlights[params.activeIndex].y = Number(y);
       }
 
-      this.setState({ documentHeight, params });
+      this.setState({ documentHeight, params, documentWidth });
     }
   }
 
-  updateParams(color, pageSize) {
+  updateParams(index, color, pageSize) {
     let { params } = this.state;
-    params.color = color;
-    params.pageSize = Number(pageSize);
+    if ( index !== null && color !==null ) {
+      params.highlights[index].color = color;
+    }
+    if ( !!pageSize ) {
+      params.pageSize = Number(pageSize);
+    }
     this.setState({ params });
   }
 
+  renderParams() {
+    const { documentWidth, documentHeight, params } = this.state;
+    return (
+      <div style={{position: 'absolute',backgroundColor:'#fff',top:'0',right:'0',padding:'15px',zIndex:'2'}}>
+        <p>Doc Width: {documentWidth}, Doc Height: {documentHeight}</p>
+        <div>
+          <div>Page Size (number of pages per ticket): </div>
+          <input value={params.pageSize} onChange={(e) => this.updateParams(null, null, e.target.value)} />
+        </div>
+
+        {
+          params.highlights.map((hl, i) => this.renderParamHL(hl, i))
+        }
+
+        {
+          !params.highlights[params.activeIndex] || !params.highlights[params.activeIndex].color
+          ? null
+          : <div>
+              <hr />
+              <center
+                style={{backgroundColor:'black',color:'#fff',marginBottom:'10px'}}
+                onClick={() => this.setState({params: {...params, activeIndex: params.activeIndex + 1}})}>+ ADD
+              </center>
+
+              <center
+                style={{backgroundColor:'black',color:'#fff'}}
+                onClick={() => this.submit()}>Submit
+              </center>
+
+            </div>
+        }
+
+      </div>
+    )
+  }
+
+  renderParamHL(hl,i) {
+    return (
+      <div key={i}>
+        <hr />
+        <p>X: {hl.x}, Y: {hl.y}, Wid: {hl.width}, Hgt: {hl.height}</p>
+        <p>
+          <span style={{backgroundColor:`${hl.color}`,color:`${hl.color}`}}>color</span>
+          <input value={hl.color} onChange={(e) => this.updateParams(i, e.target.value)} />
+        </p>
+      </div>
+    )
+  }
+
+  renderHighlighBlock(documentWidth, documentHeight, hl) {
+    return (
+      <div key={hl.x} style={{
+        position:'absolute',
+        width:`${hl.width}`,
+        height:`${hl.height}`,
+        backgroundColor:`${hl.color || 'red'}`,
+        zIndex:'2',
+        left: `calc((100vw - ${documentWidth}px) / 2 - 10px + ${hl.x}px)`,
+        top: `${documentHeight - hl.y - hl.height + 122}px`
+      }}/>
+    )
+  }
+
   submit() {
-    const { x, y, width, height, color, pageSize } = this.state.params;
-    if ( !!x && !!y && !!width && !!height && !!color && !!pageSize ) {
-      axios.post('/pdf', { x, y, width, height, color, pageSize })
+    const { x, y, width, height, color } = this.state.params.highlights[this.state.params.activeIndex];
+    // console.error(this.state.params);
+    if ( !!x && !!y && !!width && !!height && !!color ) {
+      axios.post('/pdf', this.state.params)
       .then((response) => {
         if (response.status === 200) {
           window.alert('Success!');
@@ -98,7 +161,7 @@ class PDFDisplay extends Component {
   }
 
   render() {
-    const { file, numPages, x, y, documentHeight, params } = this.state;
+    const { file, numPages, x, y, documentHeight, documentWidth, params } = this.state;
 
     return (
       <div>
@@ -109,24 +172,14 @@ class PDFDisplay extends Component {
             onChange={this.onFileChange}
           />
         </div>
-        <p>Doc Height: {documentHeight}</p>
-        <p>current: {x}, {y}</p>
-        <p>X: {params.x}, Y: {params.y}, Wid: {params.width}, Hgt: {params.height}</p>
-        <p>
-          <span style={{backgroundColor:`${params.color}`,color:`${params.color}`}}>color</span>
-          <input value={params.color} onChange={(e) => this.updateParams(e.target.value, params.pageSize)} />
-        </p>
 
-        <p>
-          <span>Page Size (number of pages per ticket): </span>
-          <input value={params.pageSize} onChange={(e) => this.updateParams(params.color, e.target.value)} />
-        </p>
+        { this.renderParams() }
 
         <div onClick={this.submit.bind(this)}>submit</div>
 
         <div
           className="Example__container__document"
-          onMouseMove={this._onMouseMove.bind(this)}
+          // onMouseMove={this._onMouseMove.bind(this)}
           onClick={this.recordPosition.bind(this)}
           ref="elem"
         >
@@ -134,6 +187,11 @@ class PDFDisplay extends Component {
             file={file}
             onLoadSuccess={this.onDocumentLoadSuccess.bind(this)}
           >
+            {
+              params.highlights.map(
+                hl => this.renderHighlighBlock(documentWidth,documentHeight,hl)
+              )
+            }
             {
               Array.from(
                 new Array(numPages),
