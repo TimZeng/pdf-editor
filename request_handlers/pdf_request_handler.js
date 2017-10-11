@@ -16,7 +16,6 @@ module.exports = {
 };
 
 const getAllPdfFilePaths = () => {
-  // const folder = path.resolve(`${__dirname}/../raw-pdf`);
   const folder = inputFolder;
   return fs.readdirSync(folder).reduce((pdfs, currentFileName) => {
     if (currentFileName.toLowerCase().endsWith('.pdf')) {
@@ -29,21 +28,10 @@ const getAllPdfFilePaths = () => {
 const splitAndHighlightFile = (pdfFilePath, params) => {
   const outputFilePaths = split(pdfFilePath, {pageSize: params.pageSize});
 
-  const defs = [
-    {
-      x: params.x,
-      y: params.y,
-      width: params.width,
-      height: params.height,
-      color: params.color,
-      // color: 0xffffff,
-      page: 0
-    }
-  ];
+  const defs = params.highlights;
 
   outputFilePaths.forEach(filePath => {
     defs.forEach(def => highlight(filePath, filePath, def));
-    // checkFileExisting(filePath, false);
   });
 };
 
@@ -112,7 +100,6 @@ const split = (inputFilePath, options = {pageSize: 1}) => {
   const ext = path.extname(inputFilePath);
 
   _.defaults(options, {
-    // outputFileDir: path.dirname(inputFilePath).replace('raw-pdf','output-pdfs'),
     outputFileDir: outputFolder,
     outputFileNamePrefix: path.basename(inputFilePath, ext)
   });
@@ -139,7 +126,6 @@ const split = (inputFilePath, options = {pageSize: 1}) => {
 const defaultHighlightDef = {x: 0, y: 0, width: 100, height: 100, page: 0, color: 0xff0000};
 
 const doHighlight = (pdfWriter, highlightDef = {}) => {
-  // highlightDef = {...defaultHighlightDef, highlightDef};
   highlightDef = Object.assign({}, defaultHighlightDef, highlightDef);
   const pageModifier = new hummus.PDFPageModifier(pdfWriter, highlightDef.page);
   const context = pageModifier.startContext().getContext();
@@ -147,7 +133,7 @@ const doHighlight = (pdfWriter, highlightDef = {}) => {
   context.drawRectangle(highlightDef.x, highlightDef.y, highlightDef.width, highlightDef.height, {
     type: 'fill',
     colorspace: 'rgb',
-    color: highlightDef.color
+    color: parseInt(highlightDef.color.replace(/^#/, ''), 16)
   });
 
   pageModifier.endContext().writePage();
