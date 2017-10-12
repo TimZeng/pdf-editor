@@ -1,4 +1,6 @@
 /node_modules
+/raw-pdf
+/output-pdfs
 bundle.js
 npm-debug.log
 .DS_Store
