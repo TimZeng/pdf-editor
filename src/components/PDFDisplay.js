@@ -28,7 +28,7 @@ class PDFDisplay extends Component {
     data.append('name', 'file name');
     data.append('description', 'description of the file');
 
-    axios.post('/file', data)
+    axios.post(`${this.props.endpoint}/file`, data)
     .then(response => {
       if (response.status === 200) {
         window.alert('File upload success!');
@@ -189,7 +189,7 @@ class PDFDisplay extends Component {
     const { file } = this.state;
     const context = this;
     if ( !!x && !!y && !!width && !!height && !!color ) {
-      axios.post('/edit', {...this.state.params, file: file.slice(2)})
+      axios.post(`${this.props.endpoint}/edit`, {...this.state.params, file: file.slice(2)})
       .then((response) => {
         if (response.status === 200) {
           console.error('response>>>>>>');

@@ -8,7 +8,7 @@ export default class App extends Component {
       <div style={{backgroundColor:'grey'}}>
         <center className='container'>
           <h1>PDF Editor</h1>
-          <PDFDisplay />
+          <PDFDisplay endpoint={this.props.endpoint} />
         </center>
       </div>
     );
