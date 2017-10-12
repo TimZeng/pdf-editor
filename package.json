@@ -6,6 +6,7 @@
   "repository": "git@github.com:TimZeng/pdf-editor.git",
   "scripts": {
     "start": "npm run build & node server.js",
+    "dev": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js",
     "build": "webpack -p",
     "test": "mocha --compilers js:babel-core/register --require ./test/test_helper.js --recursive ./test",
     "test:watch": "npm run test -- --watch"
@@ -36,11 +37,13 @@
     "fs": "0.0.1-security",
     "hummus": "^1.0.75",
     "lodash": "^3.10.1",
+    "multer": "^1.3.0",
     "react": "^0.14.3",
     "react-dom": "^0.14.3",
     "react-pdf": "^2.1.6",
     "react-redux": "^4.0.0",
     "react-router": "^2.0.1",
-    "redux": "^3.0.4"
+    "redux": "^3.0.4",
+    "zip-folder": "^1.0.0"
   }
 }
