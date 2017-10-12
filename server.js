@@ -1,10 +1,9 @@
 const express = require('express');
 const path = require('path');
 const parser = require('body-parser');
-
+const multer  = require('multer');
 
 const pdf = require('./request_handlers/pdf_request_handler');
-// const messager = require('./request_handlers/message_request_handler');
 
 /******************************************************************
   General Setup
@@ -36,48 +35,36 @@ app.get('/', (req, res) => {
   PDF Section
 ******************************************************************/
 
-app.post('/pdf', (req, res) => {
-  pdf.highlight(req.body, (err, resp) => {
+// configuring Multer to use files directory for storing files
+// this is important because later we'll need to access file path
+const storage = multer.diskStorage({
+  destination: './raw-pdf',
+  filename(req, file, cb) {
+    cb(null, `${new Date()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+// endpoint for uploading files
+app.post('/file', upload.single('file'), (req, res) => {
+  const file = req.file; // file passed from client
+  const meta = req.body; // all other values passed from the client, like name, etc..
+
+  res.status(200);
+  res.send({ path: file.path });
+});
+
+// endpoint for editing
+app.post('/edit', (req, res) => {
+  pdf.highlight(req.body, (err, outputPath) => {
     if (err) console.log('err: ', err);
     else {
       res.status(200);
-      res.send('success');
+      res.send(outputPath);
     }
   });
 });
-
-/******************************************************************
-  Blog Section
-******************************************************************/
-
-// app.get('/blogList', (req, res) => {
-//   blogger.getBlog.getBlogList((err, blogList) => {
-//     if (err) {
-//       res.send(err);
-//     } else {
-//       res.status(200);
-//       res.send(JSON.stringify(blogList));
-//     }
-//   });
-// });
-
-// app.get('/blog', (req, res) => {
-//   blogger.getBlog.getOneBlog(req.query.blogID, (err, blog) => {
-//     if (err) {
-//       res.send(err);
-//     } else {
-//       res.status(200);
-//       res.send(JSON.stringify(blog));
-//     }
-//   });
-// });
-
-// app.post('/blog', (req, res) => {
-//   blogger.postBlog.saveBlog(req.body, () => {
-//     res.status(200);
-//     res.send('success');
-//   });
-// });
 
 /******************************************************************
   Start Server

@@ -2,21 +2,31 @@ const hummus = require('hummus');
 const path = require('path');
 const fs = require('fs');
 const _ = require('lodash');
-
-const inputFolder = '/Users/xiaozeng/Desktop/pdfs/raw-pdfs';
-const outputFolder = '/Users/xiaozeng/Desktop/pdfs/output-pdfs';
+const zipFolder = require('zip-folder');
 
 module.exports = {
-  highlight: (params, callback) => {
-    const filePaths = getAllPdfFilePaths();
-    filePaths.forEach(pdfPath => splitAndHighlightFile(pdfPath, params));
+  highlight: (params, cb) => {
+    const pdfPath = getPdfFilePath(params.file);
+    splitAndHighlightFile(pdfPath, params);
 
-    callback(null, 'success');
+    /* for processing all .pdf file in a folder
+     *
+     * const filePaths = getAllPdfFilePaths();
+     * filePaths.forEach(pdfPath => splitAndHighlightFile(pdfPath, params));
+     */
+
+    zipOutput(params.file.split('/')[1].replace('.pdf',''), cb);
   }
 };
 
+// Getting specific PDF file path from source folder
+const getPdfFilePath = (fileName) => {
+  return path.resolve(`${__dirname}/../${fileName}`);
+};
+
+// Getting all PDF file paths in a folder
 const getAllPdfFilePaths = () => {
-  const folder = inputFolder;
+  const folder = path.resolve(`${__dirname}/../raw-pdf`);
   return fs.readdirSync(folder).reduce((pdfs, currentFileName) => {
     if (currentFileName.toLowerCase().endsWith('.pdf')) {
       pdfs.push(path.join(folder, currentFileName));
@@ -26,7 +36,7 @@ const getAllPdfFilePaths = () => {
 };
 
 const splitAndHighlightFile = (pdfFilePath, params) => {
-  const outputFilePaths = split(pdfFilePath, {pageSize: params.pageSize});
+  const outputFilePaths = split(pdfFilePath, {pageSize: params.pageSize}, params.file.split('/')[1].replace('.pdf',''));
 
   const defs = params.highlights;
 
@@ -54,6 +64,7 @@ const getInfo = (pdfReader, infoName) => {
 };
 
 const parse = (inputFilePath, parseMask) => {
+
   const pdfReader = hummus.createReader(inputFilePath);
 
   return Object.keys(ParseMask).reduce((result, key) => {
@@ -96,8 +107,14 @@ const outputFile = (outputFilePath, inputFilePath, startIndex, endIndex) => {
  * @param [options.pageSize] = 1
  * @param [options.outputFileNamePrefix] - inputFilePath file name without extension
  */
-const split = (inputFilePath, options = {pageSize: 1}) => {
+const split = (inputFilePath, options = {pageSize: 1}, folderName) => {
   const ext = path.extname(inputFilePath);
+
+  const outputFolder = path.resolve(`${__dirname}/../output-pdfs/${folderName}`);
+
+  if (!fs.existsSync(outputFolder)){
+    fs.mkdirSync(outputFolder);
+  }
 
   _.defaults(options, {
     outputFileDir: outputFolder,
@@ -170,4 +187,20 @@ const highlight = (inputFilePath, outputFilePath, highlightDefs) => {
   highlightDefs.forEach(highlightDef => doHighlight(pdfWriter, highlightDef));
 
   pdfWriter.end();
+};
+
+/******************************************************************
+  Zip Setup
+******************************************************************/
+
+const zipOutput = (folderName, cb) => {
+  const sourcePath = path.resolve(`${__dirname}/../output-pdfs/${folderName}`);
+  const outputPath = path.resolve(`${__dirname}/../output-pdfs/${folderName}/${folderName}.zip`);
+  zipFolder(sourcePath, outputPath, function(err) {
+    if(err) {
+      cb(err);
+    } else {
+      cb(null, `/output-pdfs/${folderName}/${folderName}.zip`);
+    }
+  });
 };
