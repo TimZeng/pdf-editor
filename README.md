@@ -30,12 +30,14 @@ Click [here](https://github.com/TimZeng/pdf-editor.git) then download the .zip f
 * [ReactJs](https://reactjs.org/) - The JavaScript library for building user interfaces
 * [NodeJs](https://nodejs.org/en/) - The JavaScript runtime built
 * [react-pdf](https://www.npmjs.com/package/react-pdf) - Display PDF files in React applications
+* [multer](https://github.com/expressjs/multer) - node.js middleware for uploading files
+* [zip-folder](https://www.npmjs.com/package/zip-folder) - Zips a folder and calls the callback
 * [HummusJS](https://github.com/galkahana/HummusJS) - NodeJS Module for Creating, Parsing an Manipulating PDF Files and Streams
 * [Webpack](https://webpack.js.org/) - The module bundler for modern JavaScript applications
 
 ## Issues
 
-* Uploading PDF to server [See more](https://github.com/TimZeng/pdf-editor/issues)
+* Enable flexible editing on react component [See more](https://github.com/TimZeng/pdf-editor/issues)
 
 ## Author
 
