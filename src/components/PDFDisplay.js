@@ -192,11 +192,7 @@ class PDFDisplay extends Component {
       axios.post(`${this.props.endpoint}/edit`, {...this.state.params, file: file.slice(2)})
       .then((response) => {
         if (response.status === 200) {
-          console.error('response>>>>>>');
-          console.error(response);
-
           context.setState({ downloadPath: response.data });
-
           window.alert('Edit Success!');
         }
       });
