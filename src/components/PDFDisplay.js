@@ -7,11 +7,10 @@ class PDFDisplay extends Component {
     file: '',
     pageNumber: null,
     numPages: null,
-    x: 0,
-    y: 0,
     documentReady: false,
     documentHeight: 0,
     documentWidth: 0,
+    downloadPath: null,
     params: {
       pageSize: 1,
       activeIndex: 0,
@@ -20,16 +19,48 @@ class PDFDisplay extends Component {
   }
 
   onFileChange = (event) => {
-    this.setState({
-      file: event.target.files[0],
-      documentHeight: 0,
-      documentReady: false,
-      params: {
-        pageSize: 1,
-        activeIndex: 0,
-        highlights: []
+    const context = this;
+
+    const data = new FormData();
+
+    data.append('file', event.target.files[0]);
+    // Add any meta data needed
+    data.append('name', 'file name');
+    data.append('description', 'description of the file');
+
+    axios.post('/file', data)
+    .then(response => {
+      if (response.status === 200) {
+        window.alert('File upload success!');
+
+        context.setState({
+          file: `./${response.data.path}`,
+          documentHeight: 0,
+          documentReady: false,
+          downloadPath: null,
+          params: {
+            pageSize: 1,
+            activeIndex: 0,
+            highlights: []
+          }
+        });
       }
+    })
+    .catch(err => {
+      window.alert('File upload failed.');
     });
+  }
+
+  renderFileUploader() {
+    return (
+      <div className="Example__container__load">
+        <label htmlFor="file">Load from file:</label>&nbsp;
+        <input
+          type="file"
+          onChange={this.onFileChange}
+        />
+      </div>
+    )
   }
 
   onDocumentLoadSuccess = ({ numPages }) => {
@@ -38,13 +69,7 @@ class PDFDisplay extends Component {
       pageNumber: null,
       documentReady: true
     })
-
   }
-
-  changePage = by =>
-    this.setState(prevState => ({
-      pageNumber: prevState.pageNumber + by,
-    }))
 
   recordPosition(e) {
     let { documentReady, documentHeight, documentWidth, params } = this.state;
@@ -85,7 +110,7 @@ class PDFDisplay extends Component {
   }
 
   renderParams() {
-    const { documentWidth, documentHeight, params } = this.state;
+    const { documentWidth, documentHeight, params, downloadPath } = this.state;
     return (
       <div style={{position: 'absolute',backgroundColor:'#fff',top:'0',right:'0',padding:'15px',zIndex:'2'}}>
         <p>Doc Width: {documentWidth}, Doc Height: {documentHeight}</p>
@@ -98,24 +123,36 @@ class PDFDisplay extends Component {
           params.highlights.map((hl, i) => this.renderParamHL(hl, i))
         }
 
-        {
-          !params.highlights[params.activeIndex] || !params.highlights[params.activeIndex].color
-          ? null
-          : <div>
-              <hr />
-              <center
-                style={{backgroundColor:'black',color:'#fff',marginBottom:'10px'}}
-                onClick={() => this.setState({params: {...params, activeIndex: params.activeIndex + 1}})}>+ ADD
-              </center>
+        { this.renderButtons() }
 
-              <center
-                style={{backgroundColor:'black',color:'#fff'}}
-                onClick={() => this.submit()}>Submit
-              </center>
+      </div>
+    )
+  }
 
-            </div>
-        }
+  renderButtons() {
+    const { params, downloadPath } = this.state;
+    const paramsReady = !!params.highlights[params.activeIndex] && !!params.highlights[params.activeIndex].color;
+    const downloadReady = !!downloadPath;
+    return(
+      <div>
+        <hr />
+        <center
+          style={{backgroundColor:`${paramsReady?'black':'grey'}`,color:'#fff',marginBottom:'10px'}}
+          onClick={paramsReady?() => this.setState({params: {...params, activeIndex: params.activeIndex + 1}}):null}>
+          + ADD
+        </center>
 
+        <center
+          style={{backgroundColor:`${paramsReady?'black':'grey'}`,color:'#fff',marginBottom:'10px'}}
+          onClick={paramsReady?() => this.submit():null}>
+          Submit
+        </center>
+
+        <a
+          style={{display:'block',lineHeight:'24px',width:'100%',backgroundColor:`${downloadReady?'black':'grey'}`,color:'#fff'}}
+          href={downloadPath} download
+          >Download
+        </a>
       </div>
     )
   }
@@ -135,26 +172,32 @@ class PDFDisplay extends Component {
 
   renderHighlighBlock(documentWidth, documentHeight, hl) {
     return (
-      <div key={hl.x} style={{
+      <div key={`${hl.x}-${hl.y}-${hl.width}`} style={{
         position:'absolute',
         width:`${hl.width}`,
         height:`${hl.height}`,
         backgroundColor:`${hl.color || 'red'}`,
         zIndex:'2',
         left: `calc((100vw - ${documentWidth}px) / 2 - 10px + ${hl.x}px)`,
-        top: `${documentHeight - hl.y - hl.height + 122}px`
+        top: `${documentHeight - hl.y - hl.height + 96}px`
       }}/>
     )
   }
 
   submit() {
     const { x, y, width, height, color } = this.state.params.highlights[this.state.params.activeIndex];
-    // console.error(this.state.params);
+    const { file } = this.state;
+    const context = this;
     if ( !!x && !!y && !!width && !!height && !!color ) {
-      axios.post('/pdf', this.state.params)
+      axios.post('/edit', {...this.state.params, file: file.slice(2)})
       .then((response) => {
         if (response.status === 200) {
-          window.alert('Success!');
+          console.error('response>>>>>>');
+          console.error(response);
+
+          context.setState({ downloadPath: response.data });
+
+          window.alert('Edit Success!');
         }
       });
     }
@@ -165,21 +208,12 @@ class PDFDisplay extends Component {
 
     return (
       <div>
-        <div className="Example__container__load">
-          <label htmlFor="file">Load from file:</label>&nbsp;
-          <input
-            type="file"
-            onChange={this.onFileChange}
-          />
-        </div>
 
+        { this.renderFileUploader() }
         { this.renderParams() }
-
-        <div onClick={this.submit.bind(this)}>submit</div>
 
         <div
           className="Example__container__document"
-          // onMouseMove={this._onMouseMove.bind(this)}
           onClick={this.recordPosition.bind(this)}
           ref="elem"
         >
@@ -199,7 +233,6 @@ class PDFDisplay extends Component {
                   <Page
                     key={`page_${index + 1}`}
                     pageNumber={index + 1}
-                    onRenderSuccess={this.onPageRenderSuccess}
                   />
                 ),
               )
